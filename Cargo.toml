@@ -1,0 +1,6 @@
+[package]
+name = "cryptopals"
+version = "0.1.0"
+authors = ["Ismael Gutiérrez González <frodo_gv@hotmail.com>"]
+
+[dependencies]
