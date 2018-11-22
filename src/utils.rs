@@ -36,6 +36,47 @@ pub fn hex_string_to_byte_array(list: &[u8]) -> Vec<u8> {
 	text.iter().enumerate().filter(|x| x.0 % 2 == 0).map(|x| *x.1).collect::<Vec<u8>>()
 }
 
+pub fn decrypt_base64(encrypted_data: &[u8]) -> Vec<u8> {
+	let mut encrypted_data = encrypted_data.to_vec();
+	let mut decrypted_data = vec![];
+	
+	// Remove line feed, as those have to be ignored.
+	encrypted_data.retain(|x| *x != b'\n');
+	
+	let mut index = 0;
+	while index < encrypted_data.len() {
+
+		if encrypted_data.get(index + 3).is_some() {
+			let range = &encrypted_data[index..index + 4];
+			let mut bits: u32 = 0;
+			let mut padding_bytes = 0;
+
+			for (cycle, value) in range.iter().enumerate() {
+				if let Some(pos) = BASE64_TABLE.iter().position(|x| x == value) { bits |= pos as u32; }
+				else if value == &61 { padding_bytes += 1 }
+
+				if cycle != 3 { bits <<= 6; }
+			}
+
+			let mut x = vec![];
+			let mut y = 0;
+			if padding_bytes > 0 { bits >>= 8 * padding_bytes };
+			while y < (3 - padding_bytes) {
+				x.push((bits & 255) as u8);
+				if y < 2 { bits >>= 8 };
+				y += 1;
+			}
+
+			x.reverse();
+			decrypted_data.append(&mut x);
+
+			index += 4;
+		}
+		else { break; }
+	}
+	decrypted_data
+}
+
 pub fn encrypt_base64(data: &[u8]) -> Vec<u8> {
 
 	let mut encrypted_data: Vec<u8> = vec![];
