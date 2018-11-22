@@ -1,4 +1,4 @@
-use utils::get_byte_from_hex;
+use utils::hex_string_to_byte_array;
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
@@ -10,18 +10,7 @@ pub fn challenge() {
 	let mut most_scored_string = (0, String::new(), vec![]);
 	for text in file.split(b'\n') {
 		let text = text.unwrap();
-		let mut processed_string = text.clone();
-
-		let mut y = 0;
-		while y < text.len() {
-			processed_string[y] = *get_byte_from_hex(&text[y]) & 15;
-			processed_string[y + 1] = *get_byte_from_hex(&text[y + 1]) & 15;
-			processed_string[y] <<= 4;
-			processed_string[y] |= processed_string[y + 1];
-			y += 2;
-		}
-
-		let processed_string = processed_string.iter().enumerate().filter(|x| x.0 % 2 == 0).map(|x| *x.1).collect::<Vec<u8>>();
+		let processed_string = hex_string_to_byte_array(&text);
 
 		let mut decoded_strings = vec![];
 		for index in 0..255 {

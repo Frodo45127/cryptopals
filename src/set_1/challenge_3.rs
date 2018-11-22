@@ -1,19 +1,10 @@
-use utils::get_byte_from_hex;
+use utils::hex_string_to_byte_array;
+
+const ENCODED_STRING: &[u8; 68] = b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 
 pub fn challenge() {
-	let encoded_string = b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-	let mut processed_string = encoded_string.clone();
 
-	let mut y = 0;
-	while y < encoded_string.len() {
-		processed_string[y] = *get_byte_from_hex(&encoded_string[y]) & 15;
-		processed_string[y + 1] = *get_byte_from_hex(&encoded_string[y + 1]) & 15;
-		processed_string[y] <<= 4;
-		processed_string[y] |= processed_string[y + 1];
-		y += 2;
-	}
-
-	let processed_string = processed_string.iter().enumerate().filter(|x| x.0 % 2 == 0).map(|x| *x.1).collect::<Vec<u8>>();
+	let processed_string = hex_string_to_byte_array(ENCODED_STRING);
 
 	let mut decoded_strings = vec![];
 	for index in 0..255 {
