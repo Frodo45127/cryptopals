@@ -1,11 +1,16 @@
-use utils::hex_string_to_byte_array;
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 4: https://cryptopals.com/sets/1/challenges/4
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::hex_string_to_byte_array;
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 use std::path::PathBuf;
 
 pub fn challenge() {
-	let file = BufReader::new(File::open(PathBuf::from("1-4")).unwrap());
+	let file = BufReader::new(File::open(PathBuf::from("assets/1-4")).unwrap());
 
 	let mut most_scored_string = (0, String::new(), vec![]);
 	for text in file.split(b'\n') {

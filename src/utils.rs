@@ -1,4 +1,4 @@
-use BASE64_TABLE;
+use super::BASE64_TABLE;
 
 pub fn get_byte_from_hex(byte: &u8) -> &u8 {
 	match byte {
@@ -12,6 +12,7 @@ pub fn get_byte_from_hex(byte: &u8) -> &u8 {
 	}
 }
 
+/// Home-made function to get a byte array (a Vec<u8>) from a hex string.
 pub fn hex_string_to_byte_array(list: &[u8]) -> Vec<u8> {
 
 	let mut text = list.to_vec();
@@ -36,13 +37,14 @@ pub fn hex_string_to_byte_array(list: &[u8]) -> Vec<u8> {
 	text.iter().enumerate().filter(|x| x.0 % 2 == 0).map(|x| *x.1).collect::<Vec<u8>>()
 }
 
+/// Home-made function to decrypt data from base64.
 pub fn decrypt_base64(encrypted_data: &[u8]) -> Vec<u8> {
 	let mut encrypted_data = encrypted_data.to_vec();
 	let mut decrypted_data = vec![];
-	
+
 	// Remove line feed, as those have to be ignored.
 	encrypted_data.retain(|x| *x != b'\n');
-	
+
 	let mut index = 0;
 	while index < encrypted_data.len() {
 
@@ -77,13 +79,14 @@ pub fn decrypt_base64(encrypted_data: &[u8]) -> Vec<u8> {
 	decrypted_data
 }
 
+/// Home-made function to encrypt data to base64.
 pub fn encrypt_base64(data: &[u8]) -> Vec<u8> {
 
 	let mut encrypted_data: Vec<u8> = vec![];
 
 	let mut index = 0;
 	while index < data.len() {
-		
+
 		// Otherwise, we have an incomplete range.
 		if data.get(index + 2).is_some() {
 			let range = &data[index..index + 3];
@@ -109,6 +112,7 @@ pub fn encrypt_base64(data: &[u8]) -> Vec<u8> {
 	encrypted_data
 }
 
+/// Function to xor a Vec of size X with another Vec of size X.
 pub fn decrypt_fixed_xor(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
 	let mut result = vec![];
 	let zip = string_1.iter().zip(string_2.iter());

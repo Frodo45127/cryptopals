@@ -1,4 +1,9 @@
-use utils::decrypt_base64;
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 6: https://cryptopals.com/sets/1/challenges/6
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::decrypt_base64;
 use std::io::{BufReader, Read};
 use std::fs::File;
 use std::path::PathBuf;
@@ -6,10 +11,10 @@ use std::path::PathBuf;
 pub fn challenge() {
 
 	// Get the file in a Vec we can actually manipulate.
-	let mut file = BufReader::new(File::open(PathBuf::from("1-6")).unwrap());
+	let mut file = BufReader::new(File::open(PathBuf::from("assets/1-6")).unwrap());
 	let mut data_to_decrypt = vec![];
 	file.read_to_end(&mut data_to_decrypt).unwrap();
-	
+
 	// First, we get rid of the base64 encoding.
 	let data_decrypted_base64 = decrypt_base64(&data_to_decrypt);
 
@@ -47,9 +52,9 @@ pub fn challenge() {
 	for index in 0..key_size {
 		transposed_data.push(
 			data_decrypted_base64.iter().enumerate()
-				.filter(|(y, _)| 
+				.filter(|(y, _)|
 					(
-						*y as isize - index as isize) 
+						*y as isize - index as isize)
 						% key_size as isize == 0
 					)
 				.map(|x| *x.1)

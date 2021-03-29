@@ -1,4 +1,9 @@
-use utils::{get_byte_from_hex, decrypt_fixed_xor};
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 2: https://cryptopals.com/sets/1/challenges/2
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::{get_byte_from_hex, decrypt_fixed_xor};
 
 const STRING_1: &[u8; 36] = b"1c0111001f010100061a024b53535009181c";
 const STRING_2: &[u8; 36] = b"686974207468652062756c6c277320657965";

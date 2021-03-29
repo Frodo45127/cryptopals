@@ -1,4 +1,9 @@
-use utils::{encrypt_base64, hex_string_to_byte_array};
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 1: https://cryptopals.com/sets/1/challenges/1
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::{encrypt_base64, hex_string_to_byte_array};
 
 pub fn challenge() {
 	let hex_source = b"49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";

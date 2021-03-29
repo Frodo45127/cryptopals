@@ -1,4 +1,9 @@
-use utils::hex_string_to_byte_array;
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 3: https://cryptopals.com/sets/1/challenges/3
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::hex_string_to_byte_array;
 
 const ENCODED_STRING: &[u8; 68] = b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 

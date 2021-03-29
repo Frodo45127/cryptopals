@@ -1,4 +1,9 @@
-use utils::hex_string_to_byte_array;
+// -------------------------------------------------------------------------------//
+// Cryptopals, Set 1, Challenge 5: https://cryptopals.com/sets/1/challenges/5
+// Impl by Frodo45127
+// -------------------------------------------------------------------------------//
+
+use crate::utils::hex_string_to_byte_array;
 
 const KEY: &[u8; 3] = b"ICE";
 const STRING: &str = "Burning 'em, if you ain't quick and nimble
