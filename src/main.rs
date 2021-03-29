@@ -1,5 +1,6 @@
 pub mod utils;
 pub mod set_1;
+pub mod set_2;
 
 const BASE64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -30,4 +31,11 @@ fn main() {
     println!("-------------------------------------------------------------------------------------");
     println!("Challenge 8");
     set_1::challenge_8::challenge();
+
+    println!("-------------------------------------------------------------------------------------");
+    println!("Set 2");
+    println!("-------------------------------------------------------------------------------------");
+    println!("Challenge 9");
+    set_2::challenge_9::challenge();
+    println!("-------------------------------------------------------------------------------------");
 }

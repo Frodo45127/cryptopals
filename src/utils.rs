@@ -119,3 +119,17 @@ pub fn decrypt_fixed_xor(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
 	zip.for_each(|(x, y)| result.push((*get_byte_from_hex(&x) & 15) ^ (*get_byte_from_hex(&y) & 15)));
 	result
 }
+
+/// Function to pad the provided vector in-place, filling it with the amount of bytes to the end of the vector.
+pub fn padd_to_end(block: &[u8], block_size: usize) -> Vec<u8> {
+	if block.len() > block_size {
+		panic!("Block is too big or block size too small");
+	} else if block.len() < block_size {
+		let mut data = block.to_vec();
+		let bytes_to_padd = block_size - block.len();
+		data.append(&mut vec![bytes_to_padd as u8; bytes_to_padd]);
+		data
+	} else {
+		block.to_vec()
+	}
+}
