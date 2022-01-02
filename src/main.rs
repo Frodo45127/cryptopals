@@ -41,4 +41,5 @@ fn main() {
     set!("2");
     challenge!(set_2, challenge_9, "9");
     challenge!(set_2, challenge_10, "10");
+    challenge!(set_2, challenge_11, "11");
 }

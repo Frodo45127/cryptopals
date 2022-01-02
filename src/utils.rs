@@ -4,6 +4,8 @@
 
 use openssl::symm::{Cipher, Crypter, Mode};
 
+use rand::Rng;
+
 const BASE64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /// Function to get a byte from a hex character.
@@ -349,4 +351,67 @@ pub fn score_strings_by_frequency<S: AsRef<str>>(strings: &[S]) -> (usize, Strin
 		score = 0;
 	}
 	most_scored
+}
+
+/// Function to generate random 16 byte keys.
+pub fn generate_random_key() -> Vec<u8> {
+	(0..16).map(|_| rand::random::<u8>()).collect()
+}
+
+/// Function to encrypt the provided data with a random key.
+pub fn encrypt_aes_128_ecb_and_cbc(data: &[u8]) -> (Vec<u8>, Vec<&str>) {
+	let mut rand_rng = rand::thread_rng();
+    let key = generate_random_key();
+    let key_size = key.len();
+    let mut result = vec![];
+
+    let prepend: Vec<u8> = (0..rand_rng.gen_range(5..10)).map(|_| rand::random::<u8>()).collect();
+    let append: Vec<u8> = (0..rand_rng.gen_range(5..10)).map(|_| rand::random::<u8>()).collect();
+
+    let mut plaintext = prepend.to_vec();
+    plaintext.extend_from_slice(&data);
+    plaintext.extend_from_slice(&append);
+
+    let mut cyphers = vec![];
+    for block in data.chunks(key_size as usize) {
+
+    	// True means ecb, false cbc.
+    	let mut block_encrypted = if rand::random::<bool>() {
+    		cyphers.push("ECB");
+    		encrypt_aes_128_ecb(&block, &key)
+    	} else {
+    		cyphers.push("CBC");
+    		let iv = generate_random_key();
+    		encrypt_aes_128_cbc(&block, &iv, &key)
+    	};
+
+
+    	result.append(&mut block_encrypted);
+    }
+
+    (result, cyphers)
+}
+
+/// Function to guess if the data provided is a ECB or CBC encrypted block.
+pub fn encryption_oracle(data: &[u8], cyphers: &[&str]) -> (i32, i32) {
+
+    let mut ok = 0;
+    let mut err = 0;
+	for (index, block) in data.chunks(16).enumerate() {
+		if data.chunks(16).filter(|x| x == &block).count() > 1 {
+			if cyphers[index] == "ECB" {
+				ok += 1;
+			} else {
+				err += 1;
+			}
+		} else {
+			if cyphers[index] == "CBC" {
+				ok += 1;
+			} else {
+				err += 1;
+			}
+		}
+	}
+
+	(ok, err)
 }
