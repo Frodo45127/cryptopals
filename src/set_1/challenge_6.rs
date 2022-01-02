@@ -3,7 +3,8 @@
 // Impl by Frodo45127
 // -------------------------------------------------------------------------------//
 
-use crate::utils::decrypt_base64;
+use crate::utils::*;
+
 use std::io::{BufReader, Read};
 use std::fs::File;
 use std::path::PathBuf;
@@ -18,35 +19,8 @@ pub fn challenge() {
 	// First, we get rid of the base64 encoding.
 	let data_decrypted_base64 = decrypt_base64(&data_to_decrypt);
 
-	// Then, ensure our function to calculate the hamming distance is correct.
-	let string_1 = b"this is a test";
-	let string_2 = b"wokka wokka!!!";
-
-	let zip = string_1.iter().zip(string_2.iter());
-	let hamming_distance = zip.fold(0, |acc, (x, y)| acc + (x ^ y).count_ones());
-	assert_eq!(hamming_distance, 37);
-
 	// Now, find the XOR KeySize.
-	let mut key_size = 99999;
-	let mut normal_big = 99999;
-
-	for size in 2..40 {
-
-		let mut y = 0;
-		let mut normal = 0;
-		while data_decrypted_base64.get(size * (y + 2)).is_some() {
-			let range_1 = &data_decrypted_base64[(size * y)..(size * (y + 1))];
-			let range_2 = &data_decrypted_base64[(size * (y + 1))..(size * (y + 2))];
-
-			let zip = range_1.iter().zip(range_2.iter());
-			let hamming_distance = zip.fold(0, |acc, (x, y)| acc + (x ^ y).count_ones());
-			normal += hamming_distance / size as u32;
-			y += 1;
-		}
-
-		normal /= (y / 2) as u32;
-		if normal < normal_big { key_size = size as u32; normal_big = normal; }
-	}
+	let key_size = detect_fixed_xor_keysize(&data_decrypted_base64);
 
 	let mut transposed_data = vec![];
 	for index in 0..key_size {

@@ -2,7 +2,8 @@ pub mod utils;
 pub mod set_1;
 pub mod set_2;
 
-const BASE64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#[cfg(test)]
+pub mod tests;
 
 fn main() {
     println!("-------------------------------------------------------------------------------------");
@@ -37,5 +38,8 @@ fn main() {
     println!("-------------------------------------------------------------------------------------");
     println!("Challenge 9");
     set_2::challenge_9::challenge();
+    println!("-------------------------------------------------------------------------------------");
+    println!("Challenge 10");
+    set_2::challenge_10::challenge();
     println!("-------------------------------------------------------------------------------------");
 }

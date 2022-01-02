@@ -1,4 +1,6 @@
-use super::BASE64_TABLE;
+use openssl::symm::{Cipher, Crypter, Mode};
+
+const BASE64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 pub fn get_byte_from_hex(byte: &u8) -> &u8 {
 	match byte {
@@ -120,6 +122,14 @@ pub fn decrypt_fixed_xor(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
 	result
 }
 
+/// Function to xor a Vec of size X with another Vec of size X.
+pub fn decrypt_fixed_xor2(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
+	let mut result = vec![];
+	let zip = string_1.iter().zip(string_2.iter());
+	zip.for_each(|(x, y)| result.push(x ^ y));
+	result
+}
+
 /// Function to pad the provided vector in-place, filling it with the amount of bytes to the end of the vector.
 pub fn padd_to_end(block: &[u8], block_size: usize) -> Vec<u8> {
 	if block.len() > block_size {
@@ -132,4 +142,99 @@ pub fn padd_to_end(block: &[u8], block_size: usize) -> Vec<u8> {
 	} else {
 		block.to_vec()
 	}
+}
+
+/// Function to detect the hamming distance (amount of different bits) between two slices of data.
+pub fn detect_hamming_distance(data_1: &[u8], data_2: &[u8]) -> u32 {
+	let zip = data_1.iter().zip(data_2.iter());
+	let hamming_distance = zip.fold(0, |acc, (x, y)| acc + (x ^ y).count_ones());
+	hamming_distance
+}
+
+/// Function to detect the key size of a key used while XORing the provided data.
+pub fn detect_fixed_xor_keysize(data: &[u8]) -> u32 {
+	let mut key_size = 99999;
+	let mut normal_big = 99999;
+
+	for size in 2..40 {
+
+		let mut y = 0;
+		let mut normal = 0;
+		while data.get(size * (y + 2)).is_some() {
+			let range_1 = &data[(size * y)..(size * (y + 1))];
+			let range_2 = &data[(size * (y + 1))..(size * (y + 2))];
+
+			let hamming_distance = detect_hamming_distance(range_1, range_2);
+			normal += hamming_distance / size as u32;
+			y += 1;
+		}
+
+		normal /= (y / 2) as u32;
+		if normal < normal_big { key_size = size as u32; normal_big = normal; }
+	}
+
+	key_size
+}
+
+/// Home-made function to encrypt a block of data in CBC mode, using the provided IV and key.
+pub fn encrypt_aes_128_cbc(data: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
+
+    // We know all blocks are the same length, but not their length, so we need to find that first.
+    let key_size = key.len();
+    let mut iv = iv.to_vec();
+    let mut result = vec![];
+
+	// CBC is basically XORed data (with IV or previous cyphertext) encrypted with ECB. So we do that.
+    let cypher = Cipher::aes_128_ecb();
+	let mut crypter = Crypter::new(cypher, Mode::Encrypt, key,None).unwrap();
+	crypter.pad(false);
+
+    for block in data.chunks(key_size as usize) {
+    	let block_xor = decrypt_fixed_xor2(block, &iv);
+    	let block_xor_padded = padd_to_end(&block_xor, key_size);
+
+    	let mut block_cbc = vec![0; block_xor_padded.len() + cypher.block_size()];
+		let _bytes_encrypted = crypter.update(&block_xor_padded, &mut block_cbc).unwrap();
+    	block_cbc.truncate(block_xor_padded.len());
+
+		iv = block_cbc.to_vec();
+    	result.append(&mut block_cbc);
+    }
+
+    result
+}
+
+/// Home-made function to decrypt a block of data in CBC mode, using the provided IV and key.
+pub fn decrypt_aes_128_cbc(encrypted_data: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
+    let key_size = key.len();
+    let mut iv = iv.to_vec();
+    let mut result = vec![];
+
+    let cypher = Cipher::aes_128_ecb();
+	let mut crypter = Crypter::new(cypher, Mode::Decrypt, key,None).unwrap();
+	crypter.pad(false);
+
+	// Yes, I know we can have cbc mode directly here, but the challenges ask for a custom implementation of CBC mode.
+	// So we need to decrypt the entire thing in ECB, then apply a per-block XOR decryption using the IV/Previous data
+	// to get the decrypted text.
+    for block in encrypted_data.chunks(key_size as usize) {
+    	let mut block_xor = vec![0; block.len() + cypher.block_size()];
+		let _bytes_encrypted = crypter.update(&block, &mut block_xor).unwrap();
+		block_xor.truncate(key_size);
+
+    	if let Some(last_byte) = block_xor.last() {
+    		let last_byte = *last_byte as usize;
+    		if last_byte < block_xor.len() {
+    			if block_xor[block_xor.len() - last_byte..].iter().all(|x| *x as usize == last_byte) {
+    				block_xor.truncate(block_xor.len() - last_byte);
+    			}
+    		}
+    	}
+
+    	let mut block_decrypted = decrypt_fixed_xor2(&block_xor, &iv);
+    	result.append(&mut block_decrypted);
+    	iv = block.to_vec();
+    }
+
+    result
 }
