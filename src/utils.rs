@@ -204,6 +204,64 @@ pub fn detect_fixed_xor_keysize(data: &[u8]) -> u32 {
 	key_size
 }
 
+/// Home-made function to encrypt a block of data in ECB mode, using the provided key.
+pub fn encrypt_aes_128_ecb(data: &[u8], key: &[u8]) -> Vec<u8> {
+
+    // We know all blocks are the same length, but not their length, so we need to find that first.
+    let key_size = key.len();
+    let mut result = vec![];
+
+	// CBC is basically XORed data (with IV or previous cyphertext) encrypted with ECB. So we do that.
+    let cypher = Cipher::aes_128_ecb();
+	let mut crypter = Crypter::new(cypher, Mode::Encrypt, key,None).unwrap();
+	crypter.pad(false);
+
+    for block in data.chunks(key_size as usize) {
+
+    	// Padd the block before xoring it, just in case the block is smaller than we need.
+    	let block_padded = padd_to_end(&block, key_size);
+
+    	let mut block_cbc = vec![0; block_padded.len() + cypher.block_size()];
+		crypter.update(&block_padded, &mut block_cbc).unwrap();
+    	block_cbc.truncate(block_padded.len());
+
+    	result.append(&mut block_cbc);
+    }
+
+    result
+}
+
+/// Home-made function to decrypt a block of data in ECB mode, using the provided key.
+pub fn decrypt_aes_128_ecb(encrypted_data: &[u8], key: &[u8]) -> Vec<u8> {
+    let key_size = key.len();
+    let mut result = vec![];
+
+    let cypher = Cipher::aes_128_ecb();
+	let mut crypter = Crypter::new(cypher, Mode::Decrypt, key,None).unwrap();
+	crypter.pad(false);
+
+	// Custom per-block implementation of CBC mode over ECB mode.
+    for block in encrypted_data.chunks(key_size as usize) {
+    	let mut block_decrypted = vec![0; block.len() + cypher.block_size()];
+		crypter.update(&block, &mut block_decrypted).unwrap();
+		block_decrypted.truncate(key_size);
+
+    	// Detect and remove padding.
+    	if let Some(last_byte) = block_decrypted.last() {
+    		let last_byte = *last_byte as usize;
+    		if last_byte < block_decrypted.len() {
+    			if block_decrypted[block_decrypted.len() - last_byte..].iter().all(|x| *x as usize == last_byte) {
+    				block_decrypted.truncate(block_decrypted.len() - last_byte);
+    			}
+    		}
+    	}
+
+    	result.append(&mut block_decrypted);
+    }
+
+    result
+}
+
 /// Home-made function to encrypt a block of data in CBC mode, using the provided IV and key.
 pub fn encrypt_aes_128_cbc(data: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
 

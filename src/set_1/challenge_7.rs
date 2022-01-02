@@ -3,14 +3,12 @@
 // Impl by Frodo45127
 // -------------------------------------------------------------------------------//
 
-use crate::utils::decrypt_base64;
+use crate::utils::*;
 
 use std::io::BufReader;
 use std::io::Read;
 use std::fs::File;
 use std::path::PathBuf;
-
-use openssl::symm::{Cipher, decrypt};
 
 const KEY: &[u8; 16] = b"YELLOW SUBMARINE";
 
@@ -23,8 +21,7 @@ pub fn challenge() {
 
     let data_decrypted_base64 = decrypt_base64(&data_to_decrypt);
 
-    let cypher = Cipher::aes_128_ecb();
-    let result = decrypt(cypher, KEY, None, &data_decrypted_base64).unwrap();
+    let result = decrypt_aes_128_ecb(&data_decrypted_base64, KEY);
     let string = String::from_utf8(result).unwrap();
 
     println!("Decrypted Text: \n {}", string);

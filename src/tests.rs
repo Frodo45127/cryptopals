@@ -17,6 +17,18 @@ fn test_detect_hamming_distance() {
 }
 
 #[test]
+/// Test to ensure our custom ecb encryption implementation works correctly.
+fn test_encrypt_decrypt_aes_128_ecb() {
+    let key: &[u8; 16] = b"YELLOW SUBMARINE";
+
+    let plaintext = b"1234567890qwertyuio".to_vec();
+    let encrypted = encrypt_aes_128_ecb(&plaintext, key);
+    let decrypted = decrypt_aes_128_ecb(&encrypted, key);
+
+    assert_eq!(plaintext, decrypted);
+}
+
+#[test]
 /// Test to ensure our custom cbc encryption implementation works correctly.
 fn test_encrypt_decrypt_aes_128_cbc() {
     let key: &[u8; 16] = b"YELLOW SUBMARINE";
