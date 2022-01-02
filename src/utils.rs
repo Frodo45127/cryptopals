@@ -1,36 +1,55 @@
+// -------------------------------------------------------------------------------//
+// Module containing generic functions not specific to any challenge.
+// -------------------------------------------------------------------------------//
+
 use openssl::symm::{Cipher, Crypter, Mode};
 
 const BASE64_TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-pub fn get_byte_from_hex(byte: &u8) -> &u8 {
+/// Function to get a byte from a hex character.
+///
+/// Panics if the byte is not a valid hex character.
+pub fn get_byte_from_hex(byte: &u8) -> u8 {
 	match byte {
-		b'0' | b'1' | b'2' | b'3' | b'4' | b'5' | b'6' | b'7'| b'8'| b'9' => byte,
-		b'a' | b'A' => &10,
-		b'b' | b'B' => &11,
-		b'c' | b'C' => &12,
-		b'd' | b'D' => &13,
-		b'e' | b'E' => &14,
-		b'f' | b'F' | _ => &15,
+		b'0' => 0,
+		b'1' => 1,
+		b'2' => 2,
+		b'3' => 3,
+		b'4' => 4,
+		b'5' => 5,
+		b'6' => 6,
+		b'7' => 7,
+		b'8' => 8,
+		b'9' => 9,
+		b'a' | b'A' => 10,
+		b'b' | b'B' => 11,
+		b'c' | b'C' => 12,
+		b'd' | b'D' => 13,
+		b'e' | b'E' => 14,
+		b'f' | b'F' => 15,
+		_ => panic!("Invalid hex character: {}", byte),
 	}
 }
 
-/// Home-made function to get a byte array (a Vec<u8>) from a hex string.
-pub fn hex_string_to_byte_array(list: &[u8]) -> Vec<u8> {
+/// This function maps a slice of pairs of hex values into a Vec of their decimal counterparts.
+///
+/// For example, it turns b"49" into b"I", as b"49" is the hex value for the UTF-8 character b"I".
+pub fn hex_array_to_byte_array(list: &[u8]) -> Vec<u8> {
 
 	let mut text = list.to_vec();
 
 	let mut y = 0;
 	while y < list.len() {
 		if list.get(y + 1).is_some() {
-			text[y] = *get_byte_from_hex(&list[y]) & 15;
-			text[y + 1] = *get_byte_from_hex(&list[y + 1]) & 15;
+			text[y] = get_byte_from_hex(&list[y]);
+			text[y + 1] = get_byte_from_hex(&list[y + 1]);
 			text[y] <<= 4;
 			text[y] |= text[y + 1];
 			y += 2;
 		}
 
 		else {
-			text[y] = *get_byte_from_hex(&list[y]) & 15;
+			text[y] = get_byte_from_hex(&list[y]);
 			text[y] <<= 4;
 			break;
 		}
@@ -114,23 +133,32 @@ pub fn encrypt_base64(data: &[u8]) -> Vec<u8> {
 	encrypted_data
 }
 
-/// Function to xor a Vec of size X with another Vec of size X.
-pub fn decrypt_fixed_xor(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
-	let mut result = vec![];
-	let zip = string_1.iter().zip(string_2.iter());
-	zip.for_each(|(x, y)| result.push((*get_byte_from_hex(&x) & 15) ^ (*get_byte_from_hex(&y) & 15)));
-	result
-}
+/// Function to XOR two slices and return the XORed data.
+///
+/// Basically, this means it executes a XOR operation of one slice against the other one, and returns the result.
+pub fn xor_data(data_1: &[u8], data_2: &[u8]) -> Vec<u8> {
 
-/// Function to xor a Vec of size X with another Vec of size X.
-pub fn decrypt_fixed_xor2(string_1: &[u8], string_2: &[u8]) -> Vec<u8> {
-	let mut result = vec![];
-	let zip = string_1.iter().zip(string_2.iter());
+	// We can only xor data slices of equal length, so we have to append zeros to the short one, if one is shorter.
+	let mut data_1 = data_1.to_vec();
+	let mut data_2 = data_2.to_vec();
+
+	if data_1.len() != data_2.len() {
+		if data_1.len() > data_2.len() {
+			let diff = data_1.len() - data_2.len();
+			data_2.extend(vec![0; diff].iter());
+		} else {
+			let diff = data_2.len() - data_1.len();
+			data_1.extend(vec![0; diff].iter());
+		}
+	}
+
+	let mut result = Vec::with_capacity(data_1.len());
+	let zip = data_1.iter().zip(data_2.iter());
 	zip.for_each(|(x, y)| result.push(x ^ y));
 	result
 }
 
-/// Function to pad the provided vector in-place, filling it with the amount of bytes to the end of the vector.
+/// Function to pad the provided vector, filling it with the amount of bytes to the end of the vector.
 pub fn padd_to_end(block: &[u8], block_size: usize) -> Vec<u8> {
 	if block.len() > block_size {
 		panic!("Block is too big or block size too small");
@@ -190,12 +218,14 @@ pub fn encrypt_aes_128_cbc(data: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
 	crypter.pad(false);
 
     for block in data.chunks(key_size as usize) {
-    	let block_xor = decrypt_fixed_xor2(block, &iv);
-    	let block_xor_padded = padd_to_end(&block_xor, key_size);
 
-    	let mut block_cbc = vec![0; block_xor_padded.len() + cypher.block_size()];
-		let _bytes_encrypted = crypter.update(&block_xor_padded, &mut block_cbc).unwrap();
-    	block_cbc.truncate(block_xor_padded.len());
+    	// Padd the block before xoring it, just in case the block is smaller than we need.
+    	let block_padded = padd_to_end(&block, key_size);
+    	let block_xor = xor_data(&block_padded, &iv);
+
+    	let mut block_cbc = vec![0; block_xor.len() + cypher.block_size()];
+		crypter.update(&block_xor, &mut block_cbc).unwrap();
+    	block_cbc.truncate(block_xor.len());
 
 		iv = block_cbc.to_vec();
     	result.append(&mut block_cbc);
@@ -214,27 +244,51 @@ pub fn decrypt_aes_128_cbc(encrypted_data: &[u8], iv: &[u8], key: &[u8]) -> Vec<
 	let mut crypter = Crypter::new(cypher, Mode::Decrypt, key,None).unwrap();
 	crypter.pad(false);
 
-	// Yes, I know we can have cbc mode directly here, but the challenges ask for a custom implementation of CBC mode.
-	// So we need to decrypt the entire thing in ECB, then apply a per-block XOR decryption using the IV/Previous data
-	// to get the decrypted text.
+	// Custom per-block implementation of CBC mode over ECB mode.
     for block in encrypted_data.chunks(key_size as usize) {
     	let mut block_xor = vec![0; block.len() + cypher.block_size()];
-		let _bytes_encrypted = crypter.update(&block, &mut block_xor).unwrap();
+		crypter.update(&block, &mut block_xor).unwrap();
 		block_xor.truncate(key_size);
 
-    	if let Some(last_byte) = block_xor.last() {
+    	let mut block_decrypted = xor_data(&block_xor, &iv);
+
+    	// Detect and remove padding.
+    	if let Some(last_byte) = block_decrypted.last() {
     		let last_byte = *last_byte as usize;
-    		if last_byte < block_xor.len() {
-    			if block_xor[block_xor.len() - last_byte..].iter().all(|x| *x as usize == last_byte) {
-    				block_xor.truncate(block_xor.len() - last_byte);
+    		if last_byte < block_decrypted.len() {
+    			if block_decrypted[block_decrypted.len() - last_byte..].iter().all(|x| *x as usize == last_byte) {
+    				block_decrypted.truncate(block_decrypted.len() - last_byte);
     			}
     		}
     	}
 
-    	let mut block_decrypted = decrypt_fixed_xor2(&block_xor, &iv);
     	result.append(&mut block_decrypted);
     	iv = block.to_vec();
     }
 
     result
+}
+
+/// This function scores strings according with character frequency in english, and returns the best scored one alongside its score.
+pub fn score_strings_by_frequency<S: AsRef<str>>(strings: &[S]) -> (usize, String) {
+	let mut most_scored = (0, String::new());
+	let mut score = 0;
+	for string in strings {
+		let string = string.as_ref();
+		score += string.matches("e").count() * 12;
+		score += string.matches("t").count() * 11;
+		score += string.matches("a").count() * 10;
+		score += string.matches("o").count() * 9;
+		score += string.matches("i").count() * 8;
+		score += string.matches("n").count() * 7;
+		score += string.matches("s").count() * 6;
+		score += string.matches("h").count() * 5;
+		score += string.matches("r").count() * 4;
+		score += string.matches("d").count() * 3;
+		score += string.matches("l").count() * 2;
+		score += string.matches("u").count() * 1;
+		if score > most_scored.0 { most_scored = (score, string.to_string()); }
+		score = 0;
+	}
+	most_scored
 }

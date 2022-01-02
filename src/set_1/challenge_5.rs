@@ -3,7 +3,7 @@
 // Impl by Frodo45127
 // -------------------------------------------------------------------------------//
 
-use crate::utils::hex_string_to_byte_array;
+use crate::utils::*;
 
 const KEY: &[u8; 3] = b"ICE";
 const STRING: &str = "Burning 'em, if you ain't quick and nimble
@@ -13,7 +13,7 @@ a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f";
 
 pub fn challenge() {
 
-	let intended_result = hex_string_to_byte_array(INTENDED_RESULT.as_bytes());
+	let intended_result = hex_array_to_byte_array(INTENDED_RESULT.as_bytes());
 	let string = STRING.as_bytes();
 
 	let mut encrypted_string = vec![];
